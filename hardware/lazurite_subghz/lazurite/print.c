@@ -61,7 +61,7 @@ void print_init(char* x, size_t size)
 
 int printBuf_ln(void)
 {
-	if((print_buf_size == 0) || (print_buf == NULL)) return;
+	if((print_buf_size == 0) || (print_buf == NULL)) return -1;
 	
 	if(print_buf_size <= print_buf_len)
 	{
@@ -73,7 +73,7 @@ int printBuf_ln(void)
 
 int printBuf(char* data)
 {
-	if((print_buf_size == 0) || (print_buf == NULL)) return;
+	if((print_buf_size == 0) || (print_buf == NULL)) return -1;
 
 	print_buf_len = strlen(strncat(print_buf,data,print_buf_size-print_buf_len));
 	

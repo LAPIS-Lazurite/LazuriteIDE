@@ -49,7 +49,6 @@
 //********************************************************************************
 static unsigned long sys_timer_count=0;
 
-static unsigned long delay_current_time_h;
 static struct {
 	unsigned long target_h;
 	unsigned short target_l;
