@@ -549,6 +549,8 @@ int BP3596_getState(void) {
     case ML7396_StateSleep:
         status = BP3596_STATUS_STATE_SLEEP;
         break;
+    default:
+        break;
     }
     return status;
 }
