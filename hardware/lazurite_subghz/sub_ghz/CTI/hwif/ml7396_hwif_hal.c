@@ -65,6 +65,8 @@ static void timer_handler(void) {
     case Disable:
         ++hwif.timer.call_count;
         break;
+    default:
+        break;
     }
 }
 #endif  /* #ifdef ML7396_HWIF_NOTHAVE_TIMER_DI */
@@ -183,6 +185,8 @@ int ml7396_hwif_timer_ei(void) {
         break;
     case Enable:
         break;
+    default:
+        break;
     }
 #else  /* #ifdef ML7396_HWIF_NOTHAVE_TIMER_DI */
     HAL_TIMER_enableInterrupt();
@@ -200,6 +204,8 @@ int ml7396_hwif_timer_di(void) {
         break;
     case Enable:
         hwif.timer.active = Disable;
+        break;
+    default:
         break;
     }
 #else  /** #ifdef ML7396_HWIF_NOTHAVE_TIMER_DI */
