@@ -534,7 +534,6 @@ static void subghz_msgOut(SUBGHZ_MSG msg)
 		Serial.print("\t");
 	}
 
-no_error:
 	Serial.print("RSSI=");
 	Serial.print_long((long)subghz_param.tx_stat.rssi,DEC);
 	Serial.print("\tSTATUS=");

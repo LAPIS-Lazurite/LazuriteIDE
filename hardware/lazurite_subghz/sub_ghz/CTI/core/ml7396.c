@@ -23,6 +23,7 @@
 #include <limits.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdlib.h>
 #include "ml7396_hwif.h"
 #include "ml7396_reg.h"
 #include "endian.h"
@@ -139,9 +140,9 @@ static int regbank(uint8_t bank) {
     case 9:  /* BANK1 + access enable */
     case 10: /* BANK2 + access enable */
         if (bank != reg.bank) {
-            reg.wdata[0] = (0x00<<1)|0x01, reg.wdata[1] = bank&0x03;
+        	reg.wdata[0] = (uint8_t)((0x00<<1)|0x01), reg.wdata[1] = (uint8_t)(bank&0x03);
             // 2015.05.27 Eiichi Saito
-            if(bank > 2) reg.wdata[1] = reg.wdata[1] | 0x80;
+            if(bank > 2) reg.wdata[1] = (uint8_t)(reg.wdata[1] | 0x80);
             ml7396_hwif_spi_transfer(reg.wdata, reg.rdata, 2);
             reg.bank = bank;
         }
@@ -175,9 +176,9 @@ int ml7396_regwrite(uint8_t bank, uint8_t addr, const uint8_t *data, uint8_t siz
         GOTO_ERROR;
     }
     regbank(bank);
-    reg.wdata[0] = (addr << 1) | 0x01;
+	reg.wdata[0] = (uint8_t)((addr << 1) | 0x01);
     memcpy(reg.wdata + 1, data, size);
-    ml7396_hwif_spi_transfer(reg.wdata, reg.rdata, size + 1);
+    ml7396_hwif_spi_transfer(reg.wdata, reg.rdata, (uint8_t)(size + 1));
     status = ML7396_STATUS_OK;
 error:
     --reg.lock;
@@ -201,9 +202,9 @@ int ml7396_regread(uint8_t bank, uint8_t addr, uint8_t *data, uint8_t size) {
         GOTO_ERROR;
     }
     regbank(bank);
-    reg.wdata[0] = (addr << 1) | 0x00;
+	reg.wdata[0] = (uint8_t)((addr << 1) | 0x00);
     memset(reg.wdata + 1, 0xff, size);  /* ここは仕様上不定値でも問題ないが、余計なノイズ出力を抑えるため'H'固定にする */
-    ml7396_hwif_spi_transfer(reg.wdata, reg.rdata, size + 1);
+    ml7396_hwif_spi_transfer(reg.wdata, reg.rdata, (uint8_t)(size + 1));
     // 2016.6.8 Eiichi Saito: SubGHz API common
 //  memcpy(data, reg.rdata + 1, size);
     memcpy(data, reg.rdata, size);
@@ -552,7 +553,7 @@ void REG_TXSTART(ML7396_Buffer* _buffer)
 #define REG_INTEN(_inten) \
     do { \
         uint8_t _reg_data[3]; \
-        _reg_data[0] = (uint8_t)((_inten) >>  0) | 0xc0, _reg_data[1] = (uint8_t)((_inten) >>  8), _reg_data[2] = (uint8_t)((_inten) >> 16); \
+        _reg_data[0] = (uint8_t)((_inten) >>  0 | 0xc0), _reg_data[1] = (uint8_t)((_inten) >>  8), _reg_data[2] = (uint8_t)((uint32_t)(_inten) >> 16); \
         ml7396_regwrite(REG_ADR_INT_SOURCE_GRP1, _reg_data, 3); \
         ml7396_regwrite(REG_ADR_INT_EN_GRP1, _reg_data, 3); \
     } while (0)
@@ -564,7 +565,7 @@ void REG_TXSTART(ML7396_Buffer* _buffer)
     do { \
         uint8_t _reg_data[3]; \
         if (_intclr) { \
-            _reg_data[0] = ~(uint8_t)((_intclr) >>  0), _reg_data[1] = ~(uint8_t)((_intclr) >>  8), _reg_data[2] = ~(uint8_t)((_intclr) >> 16); \
+            _reg_data[0] = (uint8_t)~((_intclr) >>  0), _reg_data[1] = (uint8_t)~((_intclr) >>  8), _reg_data[2] = (uint8_t)~((uint32_t)(_intclr) >> 16); \
             ml7396_regwrite(REG_ADR_INT_SOURCE_GRP1, _reg_data, 3); \
         } \
     } while (0)
@@ -819,6 +820,8 @@ static int is_rx_recvdata(const ML7396_Buffer *rx, ML7396_Header *rxheader) {
         case IEEE802154_FC_TYPE_DATA:    /* IEEE802.15.4eパケットのデータも受信 */
             status = !0;
             break;
+    default:
+        break;
     }                                    /* その他は全て破棄 */
 error:
     return status;
@@ -893,6 +896,8 @@ static int is_tx_recvack(const ML7396_Buffer *ack, const ML7396_Header *ackheade
             header.dstpanid == ackheader->dstpanid &&
             header.dstaddr == ackheader->srcaddr )
             status = !0;
+        break;
+    default:
         break;
     }
 error:

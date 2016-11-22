@@ -54,7 +54,7 @@ void ftm_timer_set(unsigned char ch, unsigned char ftmclk, unsigned short timeou
 	uint8_t ch_bitmask;
 	unsigned short* pFTM0P = &FT0P;
 	
-	ch_bitmask = 0x01 << ch;
+	ch_bitmask = (uint8_t)(0x01 << ch);
 	BLKCON1 &= ~ch_bitmask;					// enable FTMn
 	
 	
@@ -91,7 +91,7 @@ void ftm_timer_stop(unsigned char ch)
 {	
 	uint8_t ch_bitmask;
 	
-	ch_bitmask = 0x01 << ch;
+	ch_bitmask = (uint8_t)(0x01 << ch);
 	IE6 &= ~ch_bitmask;
 	
 	switch(ch)

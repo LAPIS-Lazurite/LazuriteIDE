@@ -19,6 +19,7 @@
  */
 
 #include "common.h"
+#include "driver_flash.h"
 #include "lazurite.h"
 #include "driver_gpio.h"
 #include "driver_adc.h"
@@ -119,6 +120,8 @@ void flash_erase(unsigned char sector)
 		set_bit( FSERS );
 		__asm("nop");
 		__asm("nop");
+		break;
+	default:
 		break;
 	}
 	clear_bit(FSELF);

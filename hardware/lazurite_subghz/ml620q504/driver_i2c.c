@@ -388,7 +388,7 @@ unsigned char i2c_update_err_code(UCHAR ch, unsigned short index)
 		if(I20ER != 0)	err_code = I2C_RESULT_ERROR;
 		if(I20ACR != 0)
 		{
-			err_code = (index ? I2C_RESULT_DNACK :I2C_RESULT_ANACK);
+			err_code = (unsigned char)(index ? I2C_RESULT_DNACK :I2C_RESULT_ANACK);
 		}
 	}
 	else if(ch == 1)
@@ -396,7 +396,7 @@ unsigned char i2c_update_err_code(UCHAR ch, unsigned short index)
 		if(I21ER != 0)	err_code = I2C_RESULT_ERROR;
 		if(I21ACR != 0)
 		{
-			err_code = (index ?I2C_RESULT_DNACK :I2C_RESULT_ANACK);
+			err_code = (unsigned char)(index ?I2C_RESULT_DNACK :I2C_RESULT_ANACK);
 		}
 	}
 	

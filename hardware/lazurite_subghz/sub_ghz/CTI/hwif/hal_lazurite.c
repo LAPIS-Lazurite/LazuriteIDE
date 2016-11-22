@@ -48,7 +48,7 @@ static unsigned long hal_previous_time;
 // Function
 //*****************************************************
 // api_debug add 4
-int HAL_init(void){
+int HAL_init(uint8_t i2c_addr, uint8_t addr_bits){
 
     uint32_t wait_t, t;
 
@@ -73,9 +73,12 @@ int HAL_init(void){
 
     // I2C init
 	Wire0.begin();
+
+	return 0;
 }
 
 int HAL_remove(void){
+	return 0;
 }
 
 int HAL_SPI_transfer(const unsigned char *wdata, uint16_t wsize,unsigned char *rdata, uint16_t rsize)
@@ -128,7 +131,7 @@ int HAL_I2C_read(unsigned short addr, unsigned char *data, unsigned char size)
 #ifdef LAZURITE_MINI
 	Wire0.write_byte(0);
 #endif
-	Wire0.write_byte(addr);
+	Wire0.write_byte((uint8_t)addr);
 	Wire0.endTransmission(false);
     //  api_debug mod
 	Wire0.requestFrom(0x50,size,true);
@@ -161,7 +164,7 @@ int HAL_TIMER_setup(void)
 
 int HAL_TIMER_start(unsigned short msec, void (*func)(void))
 {
-	timer_16bit_set(6,0xE8,(unsigned long)msec,func);
+	timer_16bit_set(6,0xE8,msec,func);
 	timer_16bit_start(6);
 	return HAL_STATUS_OK;
 }
