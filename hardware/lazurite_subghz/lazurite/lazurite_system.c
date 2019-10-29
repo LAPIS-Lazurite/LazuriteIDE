@@ -18,7 +18,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #include "common.h"
 #include "mcu.h"
 #include "lazurite.h"
@@ -28,6 +27,7 @@
 #include "driver_irq.h"
 #include "driver_i2c.h"
 #include "driver_uart.h"
+#include "driver_gpio.h"
 #include "lp_manage.h"
 #include "clock.h"
 #include "rdwr_reg.h"
@@ -59,10 +59,17 @@ static struct {
 void isr_sys_timer(void);
 static void clk_block_ctrl_init(void);
 void watch_dog_isr(void);
+static void wait_timeout_isr(void);
 static void lazurite_gpio_init(void);
 static void init_timer(void);
 static void delay_isr(void);
 static volatile bool delay_flag;
+static bool *event_flag;
+
+#ifdef LAZURITE_BLE
+	extern void ble_timer_func();
+#endif
+
 //********************************************************************************
 //   local functions
 //********************************************************************************
@@ -107,38 +114,56 @@ void init(void)
 void lazurite_gpio_init(void)
 {
 	// please see design note for details.
-	write_reg8(P0D,0x00);
-	write_reg8(P1D,0x00);
+	write_reg8(P0D,0x10);
+	write_reg8(P1D,0x01);
 	write_reg8(P2D,0x00);
 	write_reg8(P3D,0x00);
 	write_reg8(P4D,0x00);
-	write_reg8(P5D,0x00);
+	write_reg8(P5D,0x42);
 	write_reg8(P0DIR,0x00);
-	write_reg16(P0CON,0x0000);
-	write_reg16(P0MOD,0x0000);
-	write_reg8(P1DIR,0x00);
-	write_reg16(P1CON,0x0000);
+	write_reg16(P0CON,0x3535);
+	write_reg16(P0MOD,0x0500);
+	write_reg8(P1DIR,0x10);
+	write_reg16(P1CON,0x0303);
 	write_reg8(P2DIR,0x00);
 	write_reg16(P2CON,0x0000);
 	write_reg16(P2MOD,0x0000);
-	write_reg8(P3DIR,0x01);
-	write_reg16(P3CON,0x0202);
-	write_reg16(P3MOD,0x0303);
-	write_reg8(P4DIR,0x00);
-	write_reg16(P4CON,0x0000);
-	write_reg16(P4MOD,0x0000);
+	write_reg8(P3DIR,0x00);
+	write_reg16(P3CON,0x0000);
+	write_reg16(P3MOD,0x0000);
+	write_reg8(P4DIR,0x80);
+	write_reg16(P4CON,0x0303);
+	write_reg16(P4MOD,0x0003);
 	write_reg8(P5DIR,0x00);
 	write_reg16(P5CON,0x0000);
 	write_reg16(P5MOD,0x0000);
+
+	
+	#ifdef PWR_LED
+	drv_pinMode(11,OUTPUT);			//PWR LED ON
+	drv_digitalWrite(11,LOW);
+	#endif
 }
 
-void HALT_Until_Event(HALT_EVENT halt_event)
+static uint16_t halt_event_flag = false;
+static void halt_event_isr(void)
+{
+	halt_event_flag=true;
+}
+void HALT_Until_Event(HALT_EVENT halt_event,uint16_t timeout)
 {
 	BOOLEAN cont;
 	cont = true;
+	halt_event_flag = false;
 	
+	if(timeout)
+	{
+		timer_16bit_set(6,0xE8,timeout,halt_event_isr);
+		timer_16bit_start(6);
+	}
 	while(cont)
 	{
+		CHAR status;
 		lp_setHaltMode();
 		// process during waiting
 		i2c_isr(0);
@@ -146,19 +171,37 @@ void HALT_Until_Event(HALT_EVENT halt_event)
 		switch(halt_event)
 		{
 		case HALT_I2C1_END:
-			if(i2c_get_status(1) <= I2C_MODE_ERROR)
+			status=i2c_get_status(1);
+			if((halt_event_flag)||((!timeout)&&(status == I2C_MODE_ERROR)))
+			{
+				i2c_force_stop(1);
 				cont = false;
+			} else if(status < I2C_MODE_ERROR)
+			{
+				cont = false;
+			}
 			break;
 		case HALT_I2C0_END:
-			if(i2c_get_status(0) <= I2C_MODE_ERROR)
+			status=i2c_get_status(0);
+			if((halt_event_flag)||((!timeout)&&(status == I2C_MODE_ERROR)))
+			{
+				i2c_force_stop(0);
 				cont = false;
+			} else if(status < I2C_MODE_ERROR)
+			{
+				cont = false;
+			}
 			break;
 		default:
-			cont = false;
+			if(halt_event_flag) {
+				cont = false;
+			}
 			break;
-		}
+		}		
 		wdt_clear();
 	}
+	if(timeout)
+		timer_16bit_stop(6);
 	return;
 }
 
@@ -212,7 +255,7 @@ void delay_long(unsigned long ms)
 	
 	delay_flag = false;
 	tmp_target_l = ((ms % 64000)<<8)/250;
-	delay_time.target_l = tmp_target_l;
+	delay_time.target_l = (unsigned short)tmp_target_l;
 	delay_time.target_h = ms / 64000;
 	
 #ifdef _DEBUG
@@ -223,7 +266,7 @@ void delay_long(unsigned long ms)
 	
 	if(delay_time.target_h==0)
 	{
-		timer_16bit_set(6,0xE8,tmp_target_l,delay_isr);
+		timer_16bit_set(6,0xE8,(unsigned short)tmp_target_l,delay_isr);
 		delay_time.target_l = 0;
 	}
 	else
@@ -252,7 +295,7 @@ void sleep_long(unsigned long ms)
 	
 	
 	tmp_target_l = ((ms % 64000)<<8)/250;
-	delay_time.target_l = tmp_target_l;
+	delay_time.target_l = (unsigned short)tmp_target_l;
 	delay_time.target_h = ms / 64000;
 	
 #ifdef _DEBUG
@@ -263,7 +306,7 @@ void sleep_long(unsigned long ms)
 	
 	if(delay_time.target_h==0)
 	{
-		timer_16bit_set(6,0xE8,tmp_target_l,delay_isr);
+		timer_16bit_set(6,0xE8,(unsigned short)tmp_target_l,delay_isr);
 		delay_time.target_l = 0;
 	}
 	else
@@ -273,6 +316,10 @@ void sleep_long(unsigned long ms)
 	
 	// setup timer
 	timer_16bit_start(6);
+	
+	#ifdef PWR_LED
+	drv_digitalWrite(11,HIGH);		// PWR LED OFF
+	#endif
 	
 	while(delay_flag == false)
 	{
@@ -288,13 +335,16 @@ void sleep_long(unsigned long ms)
 		}
 	}
 	timer_16bit_stop(6);
+	#ifdef PWR_LED
+	drv_digitalWrite(11,LOW);		// PWR LED ON
+	#endif
 	return;
 }
 
 
 // for quick access, API is not in use.
 // delay interval is trimmed by NOP operation
-void delay_microseconds(unsigned long us)
+volatile void delay_microseconds(unsigned long us)
 {
 	if(us >= 2)
 	{
@@ -313,7 +363,7 @@ void delay_microseconds(unsigned long us)
 	return;
 }
 
-unsigned long millis(void)
+volatile unsigned long millis(void)
 {
 	unsigned long timer_l;
 	unsigned long timer_h;
@@ -341,7 +391,7 @@ unsigned long millis(void)
 	return result;
 }
 
-unsigned long micros(void)
+volatile unsigned long micros(void)
 {
 	unsigned long timer_l;
 	unsigned long timer_h;
@@ -369,10 +419,14 @@ unsigned long micros(void)
 	return result;
 }
 
-
+static void (*millis_timer_func)(uint32_t sys_timer_count);
 void isr_sys_timer(void)
 {
 	sys_timer_count++;
+#ifdef LAZURITE_BLE
+	ble_timer_func();
+#endif
+	if(millis_timer_func) millis_timer_func(sys_timer_count);
 	return;
 }
 
@@ -384,10 +438,18 @@ void isr_sys_timer(void)
 static void init_timer(void)
 {
 	sys_timer_count = 0;
+	millis_timer_func=NULL;
 	timer_16bit_set(TM_MILLIS,0x40,0xFFFF,isr_sys_timer);
 	timer_16bit_start(TM_MILLIS);
 	return;
 }
+
+void set_timer0_function(void (*func)(uint32_t sys_timer_count))
+{
+	millis_timer_func = func;
+	return;
+}
+
 
 static void clk_block_ctrl_init(void)
 {
@@ -395,6 +457,12 @@ static void clk_block_ctrl_init(void)
 	write_reg16(BLKCON23,0xC1DF);
 	write_reg16(BLKCON45,0x0603);
 	
+}
+
+static void wait_timeout_isr(void)
+{
+    timer_16bit_stop(6);
+    *event_flag = true;
 }
 
 void watch_dog_isr(void)
@@ -414,8 +482,59 @@ void noInterrupts()
 	dis_interrupts(DI_USER);
 }
 
+bool wait_event_timeout(bool *flag,uint32_t time)
+{	
+	uint32_t current_time;
+	uint32_t target_time;
+	int result = true;
+	
+	current_time = millis();
+	target_time = current_time+time;
+
+	
+	#ifdef PWR_LED
+	drv_digitalWrite(11,HIGH);		// PWR LED OFF
+	#endif
+	while((*flag == false) || (current_time >= target_time))
+	{
+		if((uart_tx_sending == true) || (uartf_tx_sending == true))
+		{
+			lp_setHaltMode();
+			wdt_clear();
+		}
+		else
+		{
+			lp_setDeepHaltMode();
+			wdt_clear();
+		}
+		current_time = millis();
+	}
+	if(*flag) result = false;
+	
+	*flag = false;
+	
+	#ifdef PWR_LED
+	drv_digitalWrite(11,LOW);		// PWR LED ON
+	#endif
+	
+	return result;
+}
+
+bool wait_timeout(uint32_t time)
+{	
+	int result = true;
+	timer_16bit_set(6,0xE8,(unsigned long)time,wait_timeout_isr);
+	timer_16bit_start(6);
+	return result;
+}
+
 void wait_event(bool *flag)
-{
+{	
+	#ifdef PWR_LED
+	drv_digitalWrite(11,HIGH);		// PWR LED OFF
+	#endif
+    event_flag = flag;
+
 	while(*flag == false)
 	{
 		if((uart_tx_sending == true) || (uartf_tx_sending == true))
@@ -430,5 +549,42 @@ void wait_event(bool *flag)
 		}
 	}
 	*flag = false;
+	#ifdef PWR_LED
+	drv_digitalWrite(11,LOW);		// PWR LED ON
+	#endif
 }
 
+static boolean vls_oneshot_check(uint8_t level)
+{
+	clear_bit(ENVLS);				// VLS OFF
+	write_reg16(VLSMOD, 0x700);		// reset : NO, interrupt : NO, sampling : YES
+	write_reg8(VLSCONL, level);		// set threshold
+
+	set_bit(ENVLS);					// VLS ON
+	while (VLSRF == 0) wdt_clear();	// wait until check result becomes valid
+
+	clear_bit(ENVLS);				// VLS OFF
+	return VLSF;					// return 0 : if greator than, 1 : if less than
+}
+
+// starts checking from "level" assigned in argument.
+// returns VLS_1_898 ~ VLS_4_667 : the exceeded threshold voltage,
+//               VLS_UNDER_1_898 : under 1.898V,
+//                             0 : if "level" assgined in argument is out of range.
+uint8_t voltage_check(uint8_t level)
+{
+	uint8_t ret = 0;
+
+	if ((level >= VLS_1_898) || (level <= VLS_4_667))	// check the range of level
+	{
+		clear_bit(DVLS);			// enable VLS
+		while (vls_oneshot_check(level))
+		{
+			level--;
+			if (level < VLS_1_898) break;
+		}
+		set_bit(DVLS);				// disable VLS
+		ret = level;
+	}
+	return ret;
+}

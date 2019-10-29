@@ -26,6 +26,7 @@ PRJSRC=hardware\\lazurite_subghz\\lazurite\\analogio.c
 PRJSRC=hardware\\lazurite_subghz\\lazurite\\print.c
 PRJSRC=hardware\\lazurite_subghz\\lazurite\\digitalio.c
 PRJSRC=hardware\\lazurite_subghz\\lazurite\\lazurite_system.c
+PRJSRC=hardware\\lazurite_subghz\\lazurite\\random.c
 PRJSRC=hardware\\lazurite_subghz\\lazurite\\serial.c
 PRJSRC=hardware\\lazurite_subghz\\lazurite\\tone.c
 PRJSRC=hardware\\lazurite_subghz\\lazurite\\WInterrupts.c
@@ -37,6 +38,7 @@ PRJSRC=hardware\\lazurite_subghz\\ml620q504\\driver_gpio.c
 PRJSRC=hardware\\lazurite_subghz\\ml620q504\\driver_i2c.c
 PRJSRC=hardware\\lazurite_subghz\\ml620q504\\driver_irq.c
 PRJSRC=hardware\\lazurite_subghz\\ml620q504\\driver_timer.c
+PRJSRC=hardware\\lazurite_subghz\\ml620q504\\driver_ftm_timer.c
 PRJSRC=hardware\\lazurite_subghz\\ml620q504\\driver_tmout.c
 PRJSRC=hardware\\lazurite_subghz\\ml620q504\\driver_uart.c
 PRJSRC=hardware\\lazurite_subghz\\ml620q504\\driver_flash.c
@@ -55,6 +57,7 @@ CMPOPT=/SS512
 CMPOPT=/W3
 CMPOPT=/Lv
 CMPOPT=/D_ML620Q504
+CMPOPT=/DLAZURITE_IDE
 
 OBJDIR=obj\\
 

@@ -31,6 +31,7 @@ PRJSRC=hardware\\lazurite_subghz\\lazurite\\analogio.c
 PRJSRC=hardware\\lazurite_subghz\\lazurite\\print.c
 PRJSRC=hardware\\lazurite_subghz\\lazurite\\digitalio.c
 PRJSRC=hardware\\lazurite_subghz\\lazurite\\lazurite_system.c
+PRJSRC=hardware\\lazurite_subghz\\lazurite\\random.c
 PRJSRC=hardware\\lazurite_subghz\\lazurite\\serial.c
 PRJSRC=hardware\\lazurite_subghz\\lazurite\\tone.c
 PRJSRC=hardware\\lazurite_subghz\\lazurite\\WInterrupts.c
@@ -42,6 +43,7 @@ PRJSRC=hardware\\lazurite_subghz\\ml620q504\\driver_gpio.c
 PRJSRC=hardware\\lazurite_subghz\\ml620q504\\driver_i2c.c
 PRJSRC=hardware\\lazurite_subghz\\ml620q504\\driver_irq.c
 PRJSRC=hardware\\lazurite_subghz\\ml620q504\\driver_timer.c
+PRJSRC=hardware\\lazurite_subghz\\ml620q504\\driver_ftm_timer.c
 PRJSRC=hardware\\lazurite_subghz\\ml620q504\\driver_tmout.c
 PRJSRC=hardware\\lazurite_subghz\\ml620q504\\driver_uart.c
 PRJSRC=hardware\\lazurite_subghz\\ml620q504\\driver_flash.c
@@ -49,9 +51,12 @@ PRJSRC=hardware\\lazurite_subghz\\ml620q504\\lp\\lp_manage.c
 PRJSRC=hardware\\lazurite_subghz\\ml620q504\\wdt\\wdt.c
 PRJSRC=hardware\\lazurite_subghz\\SUB_GHZ\\subghz_api.c
 PRJSRC=hardware\\lazurite_subghz\\SUB_GHZ\\CTI\\api\\bp3596.c
+PRJSRC=hardware\\lazurite_subghz\\SUB_GHZ\\CTI\\api\\aes.c
 PRJSRC=hardware\\lazurite_subghz\\SUB_GHZ\\CTI\\core\\ml7396.c
 PRJSRC=hardware\\lazurite_subghz\\SUB_GHZ\\CTI\\hwif\\hal_lazurite.c
 PRJSRC=hardware\\lazurite_subghz\\SUB_GHZ\\CTI\\hwif\\ml7396_hwif_hal.c
+PRJSRC=hardware\\lazurite_subghz\\SUB_GHZ\\CTI\\hwif\\spi0.c
+PRJSRC=hardware\\lazurite_subghz\\SUB_GHZ\\CTI\\hwif\\wire0.c
 
 ###### Compiling option
 CMPOPT=/TML620504F
@@ -67,7 +72,7 @@ CMPOPT=/Lv
 CMPOPT=/D_ML620Q504
 CMPOPT=/DSUBGHZ
 CMPOPT=/D_WDT
-
+CMPOPT=/DLAZURITE_IDE
 OBJDIR=obj\\
 
 ASMOPT=/MS

@@ -29,10 +29,11 @@
 
 #define LED 26						// pin number of Blue LED
 #define SUBGHZ_CH		36			// channel number (frequency)
-#define SUBGHZ_PANID	0xABCD		// panid
-#define HOST_ADDRESS	0x5FAC		// distination address
+#define SUBGHZ_PANID	0xFFFF		// panid
+#define HOST_ADDRESS	0xFFFF		// distination address
 
-unsigned char send_data[] = {"Welcome to Lazurite Sub-GHz\r\n"};
+unsigned char send_data[] = {"Welcome Lazurite SubGHz2!!\r\n"};
+//unsigned char send_data[] = {"Welcome SubGHz2!!\r\n"};
 
 bool event=false;
 
@@ -44,30 +45,34 @@ void callback(void)
 void setup(void)
 {
 	SubGHz.init();					// initializing Sub-GHz
+	SubGHz.setBroadcastEnb(false);
+	Serial.begin(115200);			// Initializing serial
 	
 	pinMode(LED,OUTPUT);			// setting of LED
 	digitalWrite(LED,HIGH);			// setting of LED
 	
-	timer2.set(10000L,callback);
+	timer2.set(100L,callback);
 	timer2.start();
 	
+	SubGHz.begin(SUBGHZ_CH, SUBGHZ_PANID,  SUBGHZ_100KBPS, SUBGHZ_PWR_20MW);		// start Sub-GHz
+	Serial.println_long(SubGHz.getMyAddress,HEX);
+	SubGHz.rxEnable(NULL);
 }
 
 void loop(void)
 {
-	
+	SUBGHZ_MSG msg;
 	wait_event(&event);
 	
 	// Initializing
-	SubGHz.begin(SUBGHZ_CH, SUBGHZ_PANID,  SUBGHZ_100KBPS, SUBGHZ_PWR_20MW);		// start Sub-GHz
 	
 	// preparing data
 	digitalWrite(LED,LOW);														// LED ON
-	SubGHz.send(SUBGHZ_PANID, HOST_ADDRESS, &send_data, sizeof(send_data),NULL);// send data
+	msg = SubGHz.send(SUBGHZ_PANID, HOST_ADDRESS, &send_data, sizeof(send_data),NULL);// send data
 	digitalWrite(LED,HIGH);														// LED off
-	
+	SubGHz.msgOut(msg);
 	// close
-	SubGHz.close();																// Sub-GHz module sets into power down mode.
+//	SubGHz.close();																// Sub-GHz module sets into power down mode.
 	
 	return;
 }

@@ -28,30 +28,46 @@
 
 
 #define LED 26						// pin number of Blue LED
-#define SUBGHZ_CH		36			// channel number (frequency)
-#define SUBGHZ_PANID	0xABCD		// panid
-#define HOST_ADDRESS	0x5FAC		// distination address
+#define SUBGHZ_CH		24			// channel number (frequency)
+#define SUBGHZ_PANID	0xabcd		// panid
+#define HOST_ADDRESS	0xffff		// distination address
 
 unsigned char send_data[] = {"Welcome to Lazurite Sub-GHz\r\n"};
+
+//unsigned char send_data[] = {"\
+//012345689ABCDEF012345689ABCDEF\
+//012345689ABCDEF012345689ABCDEF\
+//012345689ABCDEF012345689ABCDEF\
+//012345689ABCDEF012345689ABCDEF\
+//012345689ABCDEF012345689ABCDEF\
+//012345689ABCDEF012345689ABCDEF\
+//012345689ABCDEF012345689ABCDEF\r\n"};
+
+//unsigned char send_data[] = {"\
+//test program for Wireless communication on Lazurite system. \
+//It's including new technology but easy and low cost. \
+//wireless technology supports Subghz and LPWA. And it can use IOT system.\r\n"};
 
 void setup(void)
 {
 	
 	SubGHz.init();					// initializing Sub-GHz
-	
+	Serial.begin(115200);
 	pinMode(LED,OUTPUT);			// setting of LED
 	digitalWrite(LED,HIGH);			// setting of LED
 }
 
 void loop(void)
 {
+	SUBGHZ_MSG msg;
 	// Initializing
 	SubGHz.begin(SUBGHZ_CH, SUBGHZ_PANID,  SUBGHZ_100KBPS, SUBGHZ_PWR_20MW);		// start Sub-GHz
 	
 	// preparing data
 	digitalWrite(LED,LOW);														// LED ON
-	SubGHz.send(SUBGHZ_PANID, HOST_ADDRESS, &send_data, sizeof(send_data),NULL);// send data
+	msg=SubGHz.send(SUBGHZ_PANID, HOST_ADDRESS, &send_data, sizeof(send_data),NULL);// send data
 	digitalWrite(LED,HIGH);														// LED off
+	SubGHz.msgOut(msg);
 	
 	// close
 	SubGHz.close();																// Sub-GHz module sets into power down mode.

@@ -21,22 +21,33 @@
 #include "MsTimer2.h"
 #include "driver_timer.h"
 
-void ms_timer2_set(unsigned long ms, void (*f)());
-void ms_timer2_start(void);
-void ms_timer2_stop(void);
-void ms_timer2_isr(void);
-void ms_timer2_init(void);
+void ms_timer2_init(void)
+{
+	timer2.current_time_h = 0;
+	TM23D = (timer2.target_time_h ? 0xFFFF : timer2.target_time_l);
+	return;
+}
 
-
-MsTimer2 timer2 ={
-	0,					// unsigned long  current_time_h;
-	0,					// unsigned long  target_time_h;
-	0,					// unsigned short target_time_l;
-	NULL,				// void (*callback)(void);
-	ms_timer2_set,		// void (*set)(unsigned long ms, void (*f)());
-	ms_timer2_start,	// void (*start)(void);
-	ms_timer2_stop,		// void (*stop)(void);
-};
+void ms_timer2_isr()
+{
+	unsigned short tm_count;
+	if(timer2.current_time_h >= timer2.target_time_h)
+	{
+		timer2.callback();
+		ms_timer2_init();
+	}
+	else
+	{
+		timer2.current_time_h++;
+		TM23D = ((timer2.current_time_h != timer2.target_time_h) ?0xFFFF : timer2.target_time_l);
+		QTM3 = 0;
+		tm_count = TM23C;
+		if(timer2.target_time_l < tm_count)
+		{
+			QTM2 = 1;
+		}
+	}
+}
 
 void ms_timer2_set(unsigned long ms, void (*f)())
 {
@@ -97,30 +108,15 @@ void ms_timer2_stop(void)
 	timer_16bit_stop(2);
 }
 
-void ms_timer2_isr()
-{
-	unsigned short tm_count;
-	if(timer2.current_time_h >= timer2.target_time_h)
-	{
-		timer2.callback();
-		ms_timer2_init();
-	}
-	else
-	{
-		timer2.current_time_h++;
-		TM23D = ((timer2.current_time_h != timer2.target_time_h) ?0xFFFF : timer2.target_time_l);
-		QTM3 = 0;
-		tm_count = TM23C;
-		if(timer2.target_time_l < tm_count)
-		{
-			QTM2 = 1;
-		}
-	}
-}
+extern char uart_tx_sending;
+extern char uartf_tx_sending;
 
-void ms_timer2_init(void)
-{
-	timer2.current_time_h = 0;
-	TM23D = (timer2.target_time_h ? 0xFFFF : timer2.target_time_l);
-	return;
-}
+MsTimer2 timer2 ={
+	0,					// unsigned long  current_time_h;
+	0,					// unsigned long  target_time_h;
+	0,					// unsigned short target_time_l;
+	NULL,				// void (*callback)(void);
+	ms_timer2_set,		// void (*set)(unsigned long ms, void (*f)());
+	ms_timer2_start,	// void (*start)(void);
+	ms_timer2_stop,		// void (*stop)(void);
+};

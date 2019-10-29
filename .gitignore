@@ -2,15 +2,16 @@
 _prn/
 obj/
 /java
-/bin
+/bin/*
+!/bin/U8Dev
+/bin/U8Dev/*
+!/bin/U8Dev/Inc
+/bin/U8Dev/Inc/*
+!/bin/U8Dev/Inc/stdlib.h
 /theme
-/bin
-/res
-/languages
-/setting
-/LICENSE.txt
+LICENSE.txt
 /readme.txt
-
+/hardware/lazurite_subghz/sub_ghz/
 
 #ignore files
 *.bin
@@ -22,3 +23,4 @@ obj/
 Lazurite_IDE.pref
 graph.ini
 graph.pref
+lock

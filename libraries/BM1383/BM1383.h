@@ -24,6 +24,7 @@
 
 #define BM1383GLV_DEVICE_ADDRESS      (0x5D)    // 7bit Addrss
 #define BM1383GLV_ID_VAL              (0x31)
+#define BM1383AGLV_ID_VAL             (0x32)
 
 #define BM1383GLV_ID                  (0x10)
 #define BM1383GLV_POWER_DOWN          (0x12)
@@ -36,6 +37,8 @@
 typedef struct {
 	byte (*init)(int slave_address) ;
 	byte (*get_val)(float *data);
+	byte (*get_rawtemppressval)(unsigned char *data);
+	byte (*power_down)(void);
 } t_BM1383;
 
 extern const t_BM1383 bm1383;

@@ -24,6 +24,7 @@
 // 初期化処理を行う関数
 // コンストラクタは　クラス名::クラス名と同じ名前で構成します
 static uint8_t device_address = BM1383GLV_DEVICE_ADDRESS;
+static uint8_t device;		// 0 = BM1383, 1 = BM1383A
 static byte bm1383_write(unsigned char memory_address, unsigned char *data, unsigned char size)
 {
   byte rc;
@@ -65,21 +66,25 @@ static byte bm1383_init(int slave_address)
 	device_address = (uint8_t)(slave_address==0)?BM1383GLV_DEVICE_ADDRESS:slave_address;
   rc = bm1383_read(BM1383GLV_ID, &reg, sizeof(reg));
   if (rc != 0) {
-    Serial.println("Can't access BM1383GLV");
+//    Serial.println("Can't access BM1383GLV");
     return (rc);
   } 
-  Serial.print("BM1383GL ID Register Value = 0x");
-  Serial.println_long(reg, HEX);
+//    Serial.print("BM1383GL ID Register Value = 0x");
+//    Serial.println_long(reg, HEX);
   
-  if (reg != BM1383GLV_ID_VAL) {
-    Serial.println("Can't find BM1383GLV");
-    return (rc);
-  }
+	if (reg == BM1383GLV_ID_VAL) {
+		device = 0;
+	} else if(reg == BM1383AGLV_ID_VAL){
+		device = 1;
+	} else {
+//      Serial.println("Can't find BM1383GLV");
+	    return (rc);
+	}
 
   reg = 0x01;
   rc = bm1383_write(BM1383GLV_POWER_DOWN, &reg, sizeof(reg));
   if (rc != 0) {
-    Serial.println("Can't write BM1383GLV POWER_DOWN register");
+//    Serial.println("Can't write BM1383GLV POWER_DOWN register");
     return (rc);
   }
   
@@ -88,14 +93,24 @@ static byte bm1383_init(int slave_address)
   reg = 0x01;
   rc = bm1383_write(BM1383GLV_SLEEP, &reg, sizeof(reg));
   if (rc != 0) {
-    Serial.println("Can't write BM1383GLV SLEEP register");
+//    Serial.println("Can't write BM1383GLV SLEEP register");
     return (rc);
   }
-
-  reg = 0xC4;
+	switch(device)
+	{
+	case 0:
+		reg = 0xC4;
+		break;
+	case 1:
+		reg = 0xC2;
+		break;
+	default:
+		return(-1);
+		break;
+	}
   rc = bm1383_write(BM1383GLV_MODE_CONTROL, &reg, sizeof(reg));
   if (rc != 0) {
-    Serial.println("Can't write BM1383GLV MODE_CONTROL register");
+//    Serial.println("Can't write BM1383GLV MODE_CONTROL register");
     return (rc);
   }
 	return (rc);
@@ -107,7 +122,7 @@ static byte bm1383_get_rawtemppressval(unsigned char *data)
 
   rc = bm1383_read(BM1383GLV_TEMPERATURE_MSB, data, 5);
   if (rc != 0) {
-    Serial.println("Can't get BM1383GLV TEMP/PRESS value");
+//    Serial.println("Can't get BM1383GLV TEMP/PRESS value");
   }   
 
   return (rc);  
@@ -125,8 +140,18 @@ static byte bm1383_get_temppressval(float *temp, float *press)
     return (rc);
   } 
 
-  rawtemp = ((signed short)val[0] << 8) | (val[1]);
-  rawpress = (((unsigned long)val[2] << 16) | ((unsigned long)val[3] << 8) | val[4]&0xFC) >> 2;
+	switch(device) {
+	case 0:
+		rawtemp = ((signed short)val[0] << 8) | (val[1]);
+		rawpress = (((unsigned long)val[2] << 16) | ((unsigned long)val[3] << 8) | val[4]&0xFC) >> 2;
+		break;
+	case 1:
+		rawpress = (((unsigned long)val[0] << 16) | ((unsigned long)val[1] << 8) | val[2]&0xFC) >> 2;
+		rawtemp = ((signed short)val[3] << 8) | (val[4]);
+		break;
+	default:
+		return (-1);
+	}
 
   if (rawpress == 0) {
     return (-1);    
@@ -144,9 +169,41 @@ static void bm1383_get_val(float *data) {
 	return;
 }
 
+static byte bm1383_power_down(void)
+{
+  byte rc;
+  unsigned char reg;
+
+  // stop continuos measurement mode, then make it enter standby mode
+  reg = 0x00;
+  rc = bm1383_write(BM1383GLV_MODE_CONTROL, &reg, sizeof(reg));
+  if (rc != 0) {
+//    Serial.println("Can't write BM1383GLV MODE_CONTROL register");
+    return (rc);
+  }
+
+  // make it enter reset mode
+  reg = 0x00;
+  rc = bm1383_write(BM1383GLV_SLEEP, &reg, sizeof(reg));
+  if (rc != 0) {
+//    Serial.println("Can't write BM1383GLV SLEEP register");
+    return (rc);
+  }
+
+  // make it enter power down mode
+  reg = 0x00;
+  rc = bm1383_write(BM1383GLV_POWER_DOWN, &reg, sizeof(reg));
+  if (rc != 0) {
+//    Serial.println("Can't write BM1383GLV POWER_DOWN register");
+  }
+  return (rc);
+}
+
 const t_BM1383 bm1383 =
 {
 	bm1383_init,
 	bm1383_get_val,
+	bm1383_get_rawtemppressval,
+	bm1383_power_down
 };
 
